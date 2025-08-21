@@ -32,8 +32,34 @@ export default function Home() {
   const [fetchStatuses, setFetchStatuses] = useState<FetchState[]>(
     initialRows.map(() => "idle")
   );
+  const [fxLoading, setFxLoading] = useState(false);
+  const [fxProvider, setFxProvider] = useState<string | null>(null);
 
   const debouncedSymbols = useDebounced(rows.map(r => r.symbol), 400);
+
+  // Fetch USD->CAD on initial load and set up a 5-min auto-refresh
+  useEffect(() => {
+    const fetchFx = async () => {
+      try {
+        setFxLoading(true);
+        const res = await fetch("/api/fx?base=USD&quote=CAD", { cache: "no-store" });
+        if (!res.ok) throw new Error("fx error");
+        const data = await res.json();
+        if (typeof data.rate === "number") {
+          setUsdToCad(data.rate);
+          setFxProvider(data.provider ?? null);
+        }
+      } catch (_) {
+        // keep previous usdToCad if error
+      } finally {
+        setFxLoading(false);
+      }
+    };
+
+    fetchFx();
+    const id = setInterval(fetchFx, 5 * 60 * 1000); // auto-refresh every 5 min
+    return () => clearInterval(id);
+  }, []);
 
   // Fetch price/currency when a symbol changes (debounced)
   useEffect(() => {
@@ -145,7 +171,7 @@ export default function Home() {
       </ul>
 
       {/* Controls */}
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 text-center">
         <div>
           <label className="block text-md mb-1">Monthly budget (CAD)</label>
           <input
@@ -153,7 +179,7 @@ export default function Home() {
             min={0}
             value={amount}
             onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-full rounded-lg border border-neutral-300 p-2"
+            className="w-full text-center rounded-lg border border-neutral-300 p-2"
           />
         </div>
         <div>
@@ -162,9 +188,9 @@ export default function Home() {
             type="number"
             step="0.0001"
             min={0}
-            value={usdToCad}
+            value={fxLoading ? '' : usdToCad}
             onChange={(e) => setUsdToCad(Number(e.target.value))}
-            className="w-full rounded-lg border border-neutral-300 p-2"
+            className="w-full text-center rounded-lg border border-neutral-300 p-2"
           />
         </div>
         <div>
@@ -172,7 +198,7 @@ export default function Home() {
           <input
             value={prioritize}
             onChange={(e) => setPrioritize(e.target.value.trim().toUpperCase())}
-            className="w-full rounded-lg border border-neutral-300 p-2"
+            className="w-full text-center rounded-lg border border-neutral-300 p-2"
             placeholder={rows[0]?.symbol || "SPUS"}
           />
         </div>
@@ -181,7 +207,7 @@ export default function Home() {
           <input
             value={totalWeight}
             readOnly
-            className="w-full rounded-lg border border-neutral-200 p-2 bg-neutral-50"
+            className="w-full text-center rounded-lg border border-neutral-200 p-2 bg-neutral-50"
           />
         </div>
       </section>
@@ -234,7 +260,6 @@ export default function Home() {
                       value={Number.isFinite(r.weightPct) ? r.weightPct : 0}
                       onChange={(e) => updateWeight(i, Number(e.target.value))}
                       className="w-full text-center rounded-md border border-neutral-300 p-2"
-                      placeholder="0"
                     />
                   </Td>
                   <Td>
