@@ -134,7 +134,7 @@ export default function Page() {
             <tr>
               <Th>Priority</Th>
               <Th>Symbol (input)</Th>
-              <Th>Resolved</Th>
+              {/* <Th>Resolved</Th> */}
               <Th>Currency</Th>
               <Th>Price</Th>
               <Th>Weight % (input)</Th>
@@ -188,11 +188,11 @@ export default function Page() {
                     <input
                       value={r.symbol}
                       onChange={(e) => updateSymbol(i, e.target.value)}
-                      className="w-full text-center rounded-md border border-neutral-300 p-2"
+                      className="w-20 text-center rounded-md border border-neutral-300 p-2 sm:w-full"
                       placeholder="e.g., SPUS"
                     />
                   </Td>
-                  <Td className="text-xs text-neutral-600">{showResolved}</Td>
+                  {/* <Td className="text-xs text-neutral-600">{showResolved}</Td> */}
                   <Td>{showCurrency}</Td>
                   <Td>{showPrice}</Td>
                   <Td>
@@ -207,7 +207,7 @@ export default function Page() {
                           : 0
                       }
                       onChange={(e) => updateWeight(i, Number(e.target.value))}
-                      className="w-full text-center rounded-md border border-neutral-300 p-2"
+                      className="w-16 text-center rounded-md border border-neutral-300 p-2 sm:w-full"
                     />
                   </Td>
                   <Td>
