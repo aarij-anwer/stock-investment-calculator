@@ -378,6 +378,143 @@ function giveEqualWithCapacity(
   return next;
 }
 
+// function rebalanceAfterChange(
+//   rows: Row[],
+//   i: number,
+//   newVal: number,
+//   pIdx: number
+// ): Row[] {
+//   const n = rows.length;
+//   if (n === 0) return rows;
+
+//   const w = rows.map((r) => rawToInt(r.weightPct ?? 0));
+//   const current = w[i];
+//   let delta = newVal - current;
+
+//   if (delta === 0) return rows;
+
+//   // Helper: proportional take (removes "amount" from donor indexes) and returns new weights
+//   function takeFrom(
+//     donors: number[],
+//     amount: number,
+//     base: number[]
+//   ): number[] {
+//     if (amount <= 0 || donors.length === 0) return base;
+//     const pool = sum(donors.map((j) => base[j]));
+//     if (pool <= 0) return base;
+//     const scaled = donors.map((j) => (base[j] * amount) / pool);
+//     const floor = scaled.map(Math.floor);
+//     let need = amount - sum(floor);
+//     const rem = donors
+//       .map((j, idx) => ({ j, frac: scaled[idx] - floor[idx] }))
+//       .sort((a, b) => b.frac - a.frac);
+//     const adj = [...floor];
+//     for (let k = 0; k < rem.length && need > 0; k++) {
+//       const idx = donors.indexOf(rem[k].j);
+//       adj[idx] += 1;
+//       need -= 1;
+//     }
+//     const next = [...base];
+//     for (let t = 0; t < donors.length; t++) {
+//       const j = donors[t];
+//       next[j] = Math.max(0, next[j] - adj[t]);
+//     }
+//     return next;
+//   }
+
+//   // Helper: proportional give (adds "amount" to receiver indexes) and returns new weights
+//   function giveTo(
+//     receivers: number[],
+//     amount: number,
+//     base: number[]
+//   ): number[] {
+//     if (amount <= 0 || receivers.length === 0) return base;
+//     const pool = sum(receivers.map((j) => base[j]));
+//     // If pool is 0, just give 1% chunks round-robin
+//     if (pool <= 0) {
+//       const next = [...base];
+//       for (let k = 0; k < amount; k++) {
+//         const idx = receivers[k % receivers.length];
+//         next[idx] = Math.min(100, next[idx] + 1);
+//       }
+//       return next;
+//     }
+//     const scaled = receivers.map((j) => (base[j] * amount) / pool);
+//     const floor = scaled.map(Math.floor);
+//     let need = amount - sum(floor);
+//     const rem = receivers
+//       .map((j, idx) => ({ j, frac: scaled[idx] - floor[idx] }))
+//       .sort((a, b) => b.frac - a.frac);
+//     const adj = [...floor];
+//     for (let k = 0; k < rem.length && need > 0; k++) {
+//       const idx = receivers.indexOf(rem[k].j);
+//       adj[idx] += 1;
+//       need -= 1;
+//     }
+//     const next = [...base];
+//     for (let t = 0; t < receivers.length; t++) {
+//       const j = receivers[t];
+//       next[j] = Math.min(100, next[j] + adj[t]);
+//     }
+//     return next;
+//   }
+
+//   // INCREASE ---------------------------------------------------------------
+//   if (delta > 0) {
+//     // If increasing the priority row, donors are all non-priority rows.
+//     // If increasing a non-priority row, donors are all rows except (i and priority).
+//     const donors =
+//       i === pIdx
+//         ? Array.from({ length: n }, (_, j) => j).filter((j) => j !== pIdx)
+//         : Array.from({ length: n }, (_, j) => j).filter(
+//             (j) => j !== i && j !== pIdx
+//           );
+
+//     const donorPool = sum(donors.map((j) => w[j]));
+//     if (donorPool === 0) return rows; // nothing to take from
+
+//     const maxNew = Math.min(100, current + donorPool);
+//     const target = Math.min(newVal, maxNew);
+//     delta = target - current;
+//     if (delta <= 0) return rows;
+
+//     let nextW = [...w];
+//     nextW = takeFrom(donors, delta, nextW); // take from donors
+//     nextW[i] = current + delta; // apply increase to edited row (incl priority case)
+
+//     return rows.map((r, idx) => ({ ...r, weightPct: nextW[idx] }));
+//   }
+
+//   // DECREASE ---------------------------------------------------------------
+//   const F = -delta; // freed amount
+//   let nextW = [...w];
+
+//   if (i !== pIdx) {
+//     // Give as much as possible to priority, then spread any leftover to others
+//     nextW[i] = newVal;
+//     const pHeadroom = 100 - nextW[pIdx];
+//     const toPriority = Math.min(F, pHeadroom);
+//     nextW[pIdx] += toPriority;
+
+//     const leftover = F - toPriority;
+//     if (leftover > 0) {
+//       const receivers = Array.from({ length: n }, (_, j) => j).filter(
+//         (j) => j !== i && j !== pIdx
+//       );
+//       nextW = giveTo(receivers, leftover, nextW);
+//     }
+//     return rows.map((r, idx) => ({ ...r, weightPct: nextW[idx] }));
+//   } else {
+//     // Priority decreased: spread F across all non-priority rows
+//     nextW[pIdx] = newVal;
+//     const receivers = Array.from({ length: n }, (_, j) => j).filter(
+//       (j) => j !== pIdx
+//     );
+//     nextW = giveTo(receivers, F, nextW);
+//     return rows.map((r, idx) => ({ ...r, weightPct: nextW[idx] }));
+//   }
+// }
+
 function rebalanceAfterChange(
   rows: Row[],
   i: number,
@@ -393,7 +530,7 @@ function rebalanceAfterChange(
 
   if (delta === 0) return rows;
 
-  // Helper: proportional take (removes "amount" from donor indexes) and returns new weights
+  // ---- local helpers ----
   function takeFrom(
     donors: number[],
     amount: number,
@@ -402,18 +539,22 @@ function rebalanceAfterChange(
     if (amount <= 0 || donors.length === 0) return base;
     const pool = sum(donors.map((j) => base[j]));
     if (pool <= 0) return base;
+
     const scaled = donors.map((j) => (base[j] * amount) / pool);
     const floor = scaled.map(Math.floor);
     let need = amount - sum(floor);
+
     const rem = donors
       .map((j, idx) => ({ j, frac: scaled[idx] - floor[idx] }))
       .sort((a, b) => b.frac - a.frac);
+
     const adj = [...floor];
     for (let k = 0; k < rem.length && need > 0; k++) {
       const idx = donors.indexOf(rem[k].j);
       adj[idx] += 1;
       need -= 1;
     }
+
     const next = [...base];
     for (let t = 0; t < donors.length; t++) {
       const j = donors[t];
@@ -422,7 +563,6 @@ function rebalanceAfterChange(
     return next;
   }
 
-  // Helper: proportional give (adds "amount" to receiver indexes) and returns new weights
   function giveTo(
     receivers: number[],
     amount: number,
@@ -430,8 +570,9 @@ function rebalanceAfterChange(
   ): number[] {
     if (amount <= 0 || receivers.length === 0) return base;
     const pool = sum(receivers.map((j) => base[j]));
-    // If pool is 0, just give 1% chunks round-robin
+
     if (pool <= 0) {
+      // spread 1% chunks round-robin if all receivers are zero
       const next = [...base];
       for (let k = 0; k < amount; k++) {
         const idx = receivers[k % receivers.length];
@@ -439,18 +580,22 @@ function rebalanceAfterChange(
       }
       return next;
     }
+
     const scaled = receivers.map((j) => (base[j] * amount) / pool);
     const floor = scaled.map(Math.floor);
     let need = amount - sum(floor);
+
     const rem = receivers
       .map((j, idx) => ({ j, frac: scaled[idx] - floor[idx] }))
       .sort((a, b) => b.frac - a.frac);
+
     const adj = [...floor];
     for (let k = 0; k < rem.length && need > 0; k++) {
       const idx = receivers.indexOf(rem[k].j);
       adj[idx] += 1;
       need -= 1;
     }
+
     const next = [...base];
     for (let t = 0; t < receivers.length; t++) {
       const j = receivers[t];
@@ -458,6 +603,44 @@ function rebalanceAfterChange(
     }
     return next;
   }
+
+  function giveEqualWithCapacity(
+    receivers: number[],
+    amount: number,
+    base: number[]
+  ): number[] {
+    if (amount <= 0 || receivers.length === 0) return base.slice();
+    const next = base.slice();
+
+    while (amount > 0) {
+      const eligible = receivers.filter((j) => next[j] < 100);
+      if (eligible.length === 0) break;
+
+      const per = Math.floor(amount / eligible.length);
+      if (per > 0) {
+        let givenTotal = 0;
+        for (const j of eligible) {
+          const room = 100 - next[j];
+          const give = Math.min(per, room);
+          next[j] += give;
+          givenTotal += give;
+        }
+        amount -= givenTotal;
+        continue;
+      }
+
+      // distribute remaining single percents
+      for (const j of eligible) {
+        if (amount <= 0) break;
+        if (next[j] < 100) {
+          next[j] += 1;
+          amount -= 1;
+        }
+      }
+    }
+    return next;
+  }
+  // ---- end helpers ----
 
   // INCREASE ---------------------------------------------------------------
   if (delta > 0) {
@@ -471,7 +654,7 @@ function rebalanceAfterChange(
           );
 
     const donorPool = sum(donors.map((j) => w[j]));
-    if (donorPool === 0) return rows; // nothing to take from
+    if (donorPool === 0) return rows;
 
     const maxNew = Math.min(100, current + donorPool);
     const target = Math.min(newVal, maxNew);
@@ -479,18 +662,18 @@ function rebalanceAfterChange(
     if (delta <= 0) return rows;
 
     let nextW = [...w];
-    nextW = takeFrom(donors, delta, nextW); // take from donors
-    nextW[i] = current + delta; // apply increase to edited row (incl priority case)
+    nextW = takeFrom(donors, delta, nextW);
+    nextW[i] = current + delta;
 
     return rows.map((r, idx) => ({ ...r, weightPct: nextW[idx] }));
   }
 
   // DECREASE ---------------------------------------------------------------
-  const F = -delta; // freed amount
+  const F = -delta;
   let nextW = [...w];
 
   if (i !== pIdx) {
-    // Give as much as possible to priority, then spread any leftover to others
+    // Give as much as possible to priority, then spread leftover to others
     nextW[i] = newVal;
     const pHeadroom = 100 - nextW[pIdx];
     const toPriority = Math.min(F, pHeadroom);
@@ -501,16 +684,24 @@ function rebalanceAfterChange(
       const receivers = Array.from({ length: n }, (_, j) => j).filter(
         (j) => j !== i && j !== pIdx
       );
-      nextW = giveTo(receivers, leftover, nextW);
+      nextW = giveTo(receivers, leftover, nextW); // proportional for this case
     }
     return rows.map((r, idx) => ({ ...r, weightPct: nextW[idx] }));
   } else {
-    // Priority decreased: spread F across all non-priority rows
-    nextW[pIdx] = newVal;
+    // Priority decreased: distribute freed amount EQUALLY across non-priority rows (cap at 100)
     const receivers = Array.from({ length: n }, (_, j) => j).filter(
       (j) => j !== pIdx
     );
-    nextW = giveTo(receivers, F, nextW);
+
+    // Cap how much we can free by receivers' capacity
+    const capacity = receivers.reduce((acc, j) => acc + (100 - w[j]), 0);
+    const maxFree = Math.min(F, capacity);
+    const targetPriority = current - maxFree;
+    const actuallyFreed = current - targetPriority;
+
+    nextW[pIdx] = targetPriority;
+    nextW = giveEqualWithCapacity(receivers, actuallyFreed, nextW);
+
     return rows.map((r, idx) => ({ ...r, weightPct: nextW[idx] }));
   }
 }
