@@ -58,7 +58,7 @@ export default function Page() {
   const [prioritizeIdx, setPrioritizeIdx] = useState<number>(0);
   const [activePreset, setActivePreset] = useState<
     'Aggressive' | 'Balanced' | 'Defensive' | 'Custom'
-  >('Custom');
+  >('Aggressive');
 
   const { fetchStatuses } = useQuoteResolver(rows, setRows);
 
