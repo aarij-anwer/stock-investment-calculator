@@ -10,13 +10,13 @@ type AllocationsProps = {
   usdToCad: number;
   fxLoading: boolean;
   setUsdToCad: (n: number) => void;
-
   rows: Row[];
   setRows: React.Dispatch<React.SetStateAction<Row[]>>;
   prioritizeIdx: number;
   setPrioritizeIdx: React.Dispatch<React.SetStateAction<number>>;
   fetchStatuses: Status[];
   totalWeightPct: number;
+  disabled?: boolean;
 };
 
 /* ---------- Component ---------- */
@@ -26,6 +26,7 @@ export default function Allocations({
   prioritizeIdx,
   setPrioritizeIdx,
   fetchStatuses,
+  disabled,
 }: AllocationsProps) {
   const addRow = () =>
     setRows((prev) => [...prev, { symbol: '', weightPct: 0 }]);
@@ -97,7 +98,7 @@ export default function Allocations({
                   : '';
 
               return (
-                <tr key={i} className="border-t">
+                <tr key={i} className="">
                   <Td>
                     <input
                       type="radio"
@@ -113,6 +114,7 @@ export default function Allocations({
                       onChange={(e) => updateSymbol(i, e.target.value)}
                       className="w-20 text-center rounded-md border border-neutral-300 p-2 sm:w-full"
                       placeholder="e.g., SPUS"
+                      readOnly={disabled}
                     />
                   </Td>
                   {/* <Td className="text-xs text-neutral-600">{showResolved}</Td> */}
@@ -131,20 +133,23 @@ export default function Allocations({
                       }
                       onChange={(e) => updateWeight(i, Number(e.target.value))}
                       className="w-16 text-center rounded-md border border-neutral-300 p-2 sm:w-full"
+                      readOnly={disabled}
                     />
                   </Td>
                   <Td>
-                    <button
-                      onClick={() => removeRow(i)}
-                      disabled={rows.length === 1}
-                      className={
-                        rows.length > 1
-                          ? 'px-3 py-2 rounded-md border border-red-300 text-red-700 hover:bg-red-50'
-                          : 'px-3 py-2 rounded-md border border-neutral-300 text-neutral-500'
-                      }
-                    >
-                      Remove
-                    </button>
+                    {!disabled && (
+                      <button
+                        onClick={() => removeRow(i)}
+                        disabled={rows.length === 1}
+                        className={
+                          rows.length > 1
+                            ? 'px-3 py-2 rounded-md border border-red-300 text-red-700 hover:bg-red-50'
+                            : 'px-3 py-2 rounded-md border border-neutral-300 text-neutral-500'
+                        }
+                      >
+                        Remove
+                      </button>
+                    )}
                   </Td>
                 </tr>
               );
@@ -154,14 +159,16 @@ export default function Allocations({
       </div>
 
       {/* Add row */}
-      <div className="flex gap-3 mt-3">
-        <button
-          onClick={addRow}
-          className="px-4 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50"
-        >
-          Add row
-        </button>
-      </div>
+      {!disabled && (
+        <div className="flex gap-3 mt-3">
+          <button
+            onClick={addRow}
+            className="px-4 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50"
+          >
+            Add row
+          </button>
+        </div>
+      )}
     </>
   );
 }

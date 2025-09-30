@@ -26,22 +26,22 @@ const PRESETS: Record<
   Row[]
 > = {
   Aggressive: [
-    { symbol: 'SPUS', weightPct: 60 },
-    { symbol: 'WSHR', weightPct: 25 },
+    { symbol: 'SPTE', weightPct: 40 },
+    { symbol: 'SPUS', weightPct: 40 },
+    { symbol: 'SPWO', weightPct: 10 },
     { symbol: 'SPRE', weightPct: 10 },
-    { symbol: 'SPSK', weightPct: 5 },
   ],
   Balanced: [
     { symbol: 'SPUS', weightPct: 40 },
-    { symbol: 'WSHR', weightPct: 25 },
-    { symbol: 'SPRE', weightPct: 20 },
-    { symbol: 'SPSK', weightPct: 15 },
+    { symbol: 'SPWO', weightPct: 25 },
+    { symbol: 'SPTE', weightPct: 20 },
+    { symbol: 'SPRE', weightPct: 15 },
   ],
   Defensive: [
-    { symbol: 'SPSK', weightPct: 50 },
-    { symbol: 'SPUS', weightPct: 25 },
-    { symbol: 'SPRE', weightPct: 15 },
-    { symbol: 'WSHR', weightPct: 10 },
+    { symbol: 'SPSK', weightPct: 40 },
+    { symbol: 'SPRE', weightPct: 40 },
+    { symbol: 'SPUS', weightPct: 15 },
+    { symbol: 'SPTE', weightPct: 5 },
   ],
   Custom: initialRows, // your original default
 };
@@ -102,12 +102,14 @@ export default function Page() {
           Build a smarter monthly portfolio—by percent, by priority, by price.
         </p>
         <p className="text-neutral-600 text-base">
-          Enter weights, set a priority, and get whole-share buys in CAD.
+          Enter your monthly budget, pick a curated portfolio aligned to your
+          preferences—or customize a bespoke mix—and get whole-share buys in
+          CAD.{' '}
         </p>
         <div className="flex items-center gap-1 text-neutral-600">
-          <label className="block text-sm">USD → CAD:</label>
+          <label className="block text-sm">(USD → CAD:</label>
           <label className="block text-sm">
-            {fxLoading ? '' : usdToCad.toFixed(2)}
+            {fxLoading ? '' : usdToCad.toFixed(2)})
           </label>
         </div>
       </section>
@@ -122,13 +124,13 @@ export default function Page() {
             min={0}
             value={amount}
             onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-20 text-center rounded-lg border border-neutral-300 p-2"
+            className="w-20 text-center rounded-lg border border-neutral-300 p-1"
           />
         </div>
       </section>
 
       {/* Strategy buttons */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex gap-2 mb-4">
         {(['Aggressive', 'Defensive', 'Balanced', 'Custom'] as const).map(
           (label) => {
             const isActive = activePreset === label;
@@ -138,8 +140,8 @@ export default function Page() {
                 onClick={() => applyPreset(label)}
                 className={
                   isActive
-                    ? 'px-3 py-2 rounded-md border border-blue-600 text-white bg-blue-600'
-                    : 'px-3 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50'
+                    ? 'w-full px-3 py-2 rounded-md border border-blue-600 text-white bg-blue-600'
+                    : 'w-full px-3 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50'
                 }
                 aria-pressed={isActive}
               >
@@ -160,6 +162,7 @@ export default function Page() {
         setPrioritizeIdx={setPrioritizeIdx}
         fetchStatuses={fetchStatuses}
         totalWeightPct={totalWeightPct}
+        disabled={activePreset !== 'Custom'}
       />
 
       <SharesToPurchase
