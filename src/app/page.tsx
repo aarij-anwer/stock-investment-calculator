@@ -130,7 +130,7 @@ export default function Page() {
       </section>
 
       {/* Strategy buttons */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-col gap-2 mb-4 sm:flex-row">
         {(['Aggressive', 'Defensive', 'Balanced', 'Custom'] as const).map(
           (label) => {
             const isActive = activePreset === label;
@@ -140,8 +140,8 @@ export default function Page() {
                 onClick={() => applyPreset(label)}
                 className={
                   isActive
-                    ? 'w-full px-3 py-2 rounded-md border border-blue-600 text-white bg-blue-600'
-                    : 'w-full px-3 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50'
+                    ? 'flex-1 px-3 py-2 rounded-md border border-blue-600 text-white bg-blue-600'
+                    : 'flex-1 px-3 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50'
                 }
                 aria-pressed={isActive}
               >

@@ -64,13 +64,12 @@ export default function Allocations({
         <table className="w-full border-collapse">
           <thead className="bg-neutral-50">
             <tr>
-              <Th>Priority</Th>
+              {!disabled && <Th>Priority</Th>}
               <Th>Symbol (input)</Th>
-              {/* <Th>Resolved</Th> */}
               <Th>Currency</Th>
               <Th>Price</Th>
               <Th>Weight % (input)</Th>
-              <Th>&nbsp;</Th>
+              {!disabled && <Th>&nbsp;</Th>}
             </tr>
           </thead>
           <tbody>
@@ -99,25 +98,30 @@ export default function Allocations({
 
               return (
                 <tr key={i} className="">
-                  <Td>
-                    <input
-                      type="radio"
-                      name="priority"
-                      checked={i === prioritizeIdx}
-                      onChange={() => setPrioritizeIdx(i)}
-                      aria-label="Set as priority"
-                    />
-                  </Td>
+                  {!disabled && (
+                    <Td className="">
+                      <input
+                        type="radio"
+                        name="priority"
+                        checked={i === prioritizeIdx}
+                        onChange={() => setPrioritizeIdx(i)}
+                        aria-label="Set as priority"
+                      />
+                    </Td>
+                  )}
                   <Td>
                     <input
                       value={r.symbol}
                       onChange={(e) => updateSymbol(i, e.target.value)}
-                      className="w-20 text-center rounded-md border border-neutral-300 p-2 sm:w-full"
+                      className={
+                        disabled
+                          ? 'w-20 text-center border-neutral-300 p-2'
+                          : 'w-20 text-center rounded-md border border-neutral-300 p-2 sm:w-full'
+                      }
                       placeholder="e.g., SPUS"
                       readOnly={disabled}
                     />
                   </Td>
-                  {/* <Td className="text-xs text-neutral-600">{showResolved}</Td> */}
                   <Td>{showCurrency}</Td>
                   <Td>{showPrice}</Td>
                   <Td>
@@ -132,12 +136,16 @@ export default function Allocations({
                           : 0
                       }
                       onChange={(e) => updateWeight(i, Number(e.target.value))}
-                      className="w-16 text-center rounded-md border border-neutral-300 p-2 sm:w-full"
+                      className={
+                        disabled
+                          ? 'w-16 text-center p-2 '
+                          : 'w-16 text-center rounded-md border border-neutral-300 p-2 sm:w-full'
+                      }
                       readOnly={disabled}
                     />
                   </Td>
-                  <Td>
-                    {!disabled && (
+                  {!disabled && (
+                    <Td>
                       <button
                         onClick={() => removeRow(i)}
                         disabled={rows.length === 1}
@@ -149,8 +157,8 @@ export default function Allocations({
                       >
                         Remove
                       </button>
-                    )}
-                  </Td>
+                    </Td>
+                  )}
                 </tr>
               );
             })}
