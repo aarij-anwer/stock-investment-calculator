@@ -13,13 +13,6 @@ import {
 import Allocations from './components/Allocations';
 import SharesToPurchase from './components/SharesToPurchase';
 
-const initialRows: Row[] = [
-  { symbol: 'SPUS', weightPct: 50 },
-  { symbol: 'SPRE', weightPct: 25 },
-  { symbol: 'SPSK', weightPct: 15 },
-  { symbol: 'WSHR', weightPct: 10 },
-];
-
 /** Preset strategies */
 const PRESETS: Record<
   'Aggressive' | 'Balanced' | 'Defensive' | 'Custom',
@@ -43,7 +36,12 @@ const PRESETS: Record<
     { symbol: 'SPUS', weightPct: 15 },
     { symbol: 'SPTE', weightPct: 5 },
   ],
-  Custom: initialRows, // your original default
+  Custom: [
+    { symbol: 'SPUS', weightPct: 50 },
+    { symbol: 'SPRE', weightPct: 25 },
+    { symbol: 'SPSK', weightPct: 15 },
+    { symbol: 'WSHR', weightPct: 10 },
+  ], // your original default
 };
 
 export default function Page() {
@@ -54,11 +52,13 @@ export default function Page() {
     setRate: setUsdToCad,
   } = useFxRate(1.4);
 
-  const [rows, setRows] = useState<Row[]>(initialRows);
+  const initialRow = 'Aggressive';
+
   const [prioritizeIdx, setPrioritizeIdx] = useState<number>(0);
   const [activePreset, setActivePreset] = useState<
     'Aggressive' | 'Balanced' | 'Defensive' | 'Custom'
-  >('Aggressive');
+  >(initialRow);
+  const [rows, setRows] = useState<Row[]>(PRESETS[activePreset]);
 
   const { fetchStatuses } = useQuoteResolver(rows, setRows);
 

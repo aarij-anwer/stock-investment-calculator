@@ -312,6 +312,7 @@ export function useAllocation(
   tickerInputs: TickerInput[],
   prioritize?: string
 ) {
+  console.log(tickerInputs);
   return useMemo(() => {
     if (!tickerInputs || tickerInputs.length === 0 || amountCad <= 0)
       return null;
