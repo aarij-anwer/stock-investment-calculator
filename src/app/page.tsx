@@ -97,7 +97,7 @@ export default function Page() {
   return (
     <main className="mx-auto max-w-5xl p-6">
       <section className="flex flex-col mb-4 gap-1">
-        <h1 className="text-3xl font-bold">Smart Allocator</h1>
+        <h1 className="text-3xl font-bold">Smart Portfolio Allocator</h1>
         <p className="text-xl">
           Build a smarter monthly portfolio—by percent, by priority, by price.
         </p>
