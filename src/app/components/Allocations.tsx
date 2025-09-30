@@ -7,8 +7,6 @@ import type { Row } from '@/lib/types';
 type Status = 'idle' | 'loading' | 'ok' | 'error';
 
 type AllocationsProps = {
-  amount: number;
-  setAmount: (n: number) => void;
   usdToCad: number;
   fxLoading: boolean;
   setUsdToCad: (n: number) => void;
@@ -23,17 +21,11 @@ type AllocationsProps = {
 
 /* ---------- Component ---------- */
 export default function Allocations({
-  amount,
-  setAmount,
-  usdToCad,
-  fxLoading,
-  setUsdToCad,
   rows,
   setRows,
   prioritizeIdx,
   setPrioritizeIdx,
   fetchStatuses,
-  totalWeightPct,
 }: AllocationsProps) {
   const addRow = () =>
     setRows((prev) => [...prev, { symbol: '', weightPct: 0 }]);
@@ -66,41 +58,6 @@ export default function Allocations({
 
   return (
     <>
-      {/* Controls */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-center">
-        <div>
-          <label className="block text-sm mb-1">Monthly budget (CAD)</label>
-          <input
-            type="number"
-            min={0}
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-full text-center rounded-lg border border-neutral-300 p-2"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">USD → CAD</label>
-          <input
-            type="number"
-            step="0.0001"
-            min={0}
-            value={fxLoading ? '' : usdToCad}
-            onChange={(e) => setUsdToCad(Number(e.target.value))}
-            className="w-full text-center rounded-lg border border-neutral-300 p-2"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Total weight (%)</label>
-          <input
-            value={totalWeightPct}
-            readOnly
-            className="w-full text-center rounded-lg border border-neutral-200 p-2 bg-neutral-50"
-          />
-        </div>
-      </section>
-
       {/* Editable table */}
       <div className="overflow-x-auto border border-neutral-200 rounded-lg">
         <table className="w-full border-collapse">
