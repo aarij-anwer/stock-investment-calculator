@@ -101,12 +101,12 @@ export default function Page() {
         <p className="text-xl">
           Build a smarter monthly portfolio—by percent, by priority, by price.
         </p>
-        <p className="text-neutral-600 text-base">
+        <p className="text-neutral-600 text-base  dark:text-neutral-100">
           Enter your monthly budget, pick a curated portfolio aligned to your
           preferences—or customize a bespoke mix—and get whole-share buys in
           CAD.{' '}
         </p>
-        <div className="flex items-center gap-1 text-neutral-600">
+        <div className="flex items-center gap-1 text-neutral-600  dark:text-neutral-100">
           <label className="block text-sm">(USD → CAD:</label>
           <label className="block text-sm">
             {fxLoading ? '' : usdToCad.toFixed(2)})
@@ -124,7 +124,7 @@ export default function Page() {
             min={0}
             value={amount}
             onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-20 text-center rounded-lg border border-neutral-300 p-1"
+            className="w-24 text-center rounded-lg border border-neutral-300 p-1"
           />
         </div>
       </section>
@@ -141,7 +141,7 @@ export default function Page() {
                 className={
                   isActive
                     ? 'flex-1 px-3 py-2 rounded-md border border-blue-600 text-white bg-blue-600'
-                    : 'flex-1 px-3 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50'
+                    : 'flex-1 px-3 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
                 }
                 aria-pressed={isActive}
               >

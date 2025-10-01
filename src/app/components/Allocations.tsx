@@ -60,10 +60,10 @@ export default function Allocations({
   return (
     <>
       {/* Editable table */}
-      <div className="overflow-x-auto border border-neutral-200 rounded-lg">
-        <table className="w-full border-collapse">
-          <thead className="bg-neutral-50">
-            <tr>
+      <div className="overflow-x-auto border border-neutral-200 dark:border-neutral-700 rounded-lg">
+        <table className="w-full border-collapse text-neutral-900 dark:text-neutral-100">
+          <thead className="bg-neutral-50 dark:bg-neutral-800">
+            <tr className="border-b border-neutral-200 dark:border-neutral-700">
               {!disabled && <Th>Priority</Th>}
               <Th>Symbol (input)</Th>
               <Th>Currency</Th>
@@ -72,7 +72,7 @@ export default function Allocations({
               {!disabled && <Th>&nbsp;</Th>}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white dark:bg-neutral-900">
             {rows.map((r, i) => {
               const status = (fetchStatuses[i] ?? 'idle') as Status;
 
@@ -115,8 +115,8 @@ export default function Allocations({
                       onChange={(e) => updateSymbol(i, e.target.value)}
                       className={
                         disabled
-                          ? 'w-20 text-center border-neutral-300 p-2'
-                          : 'w-20 text-center rounded-md border border-neutral-300 p-2 sm:w-full'
+                          ? 'w-20 text-center p-2 border border-transparent bg-transparent text-neutral-900 dark:text-neutral-100'
+                          : 'w-20 sm:w-full text-center rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-400 p-2'
                       }
                       placeholder="e.g., SPUS"
                       readOnly={disabled}
@@ -165,13 +165,12 @@ export default function Allocations({
           </tbody>
         </table>
       </div>
-
       {/* Add row */}
       {!disabled && (
         <div className="flex gap-3 mt-3">
           <button
             onClick={addRow}
-            className="px-4 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50"
+            className="px-4 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
           >
             Add row
           </button>
