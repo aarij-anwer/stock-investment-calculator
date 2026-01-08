@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Row } from '@/lib/types';
+import NumericInput from './NumericInput';
 
 /* ---------- Types ---------- */
 type Status = 'idle' | 'loading' | 'ok' | 'error';
@@ -125,8 +126,7 @@ export default function Allocations({
                   <Td>{showCurrency}</Td>
                   <Td>{showPrice}</Td>
                   <Td>
-                    <input
-                      type="number"
+                    <NumericInput
                       step={1}
                       min={0}
                       max={100}
@@ -135,7 +135,7 @@ export default function Allocations({
                           ? Math.round(r.weightPct!)
                           : 0
                       }
-                      onChange={(e) => updateWeight(i, Number(e.target.value))}
+                      onNumberChange={(next) => updateWeight(i, next)}
                       className={
                         disabled
                           ? 'w-16 text-center p-2 '

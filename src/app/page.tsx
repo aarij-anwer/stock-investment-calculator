@@ -11,6 +11,7 @@ import {
   cadPriceLookup,
 } from '@/lib/alloc';
 import Allocations from './components/Allocations';
+import NumericInput from './components/NumericInput';
 import SharesToPurchase from './components/SharesToPurchase';
 
 /** Preset strategies */
@@ -117,13 +118,12 @@ export default function Page() {
       <section className="mb-4">
         <div className="flex items-center gap-2">
           <label className="text-sm">Monthly budget (CAD)</label>
-          <input
-            type="number"
+          <NumericInput
             prefix="$"
             step={1}
             min={0}
             value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
+            onNumberChange={setAmount}
             className="w-24 text-center rounded-lg border border-neutral-300 p-1"
           />
         </div>
