@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Row } from '@/lib/types';
 import {
   useFxRate,
@@ -41,11 +42,14 @@ const PRESETS: Record<
     { symbol: 'SPUS', weightPct: 50 },
     { symbol: 'SPRE', weightPct: 25 },
     { symbol: 'SPSK', weightPct: 15 },
-    { symbol: 'WSHR', weightPct: 10 },
+    { symbol: 'BTCC.TO', weightPct: 10 },
   ], // your original default
 };
 
 export default function Page() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [amount, setAmount] = useState<number>(750);
   const {
     rate: usdToCad,
@@ -60,6 +64,26 @@ export default function Page() {
     'Aggressive' | 'Balanced' | 'Defensive' | 'Custom'
   >(initialRow);
   const [rows, setRows] = useState<Row[]>(PRESETS[activePreset]);
+
+  // Read strategy from URL query param on mount
+  useEffect(() => {
+    const strategyParam = searchParams.get('strategy');
+    if (strategyParam) {
+      const normalized =
+        strategyParam.charAt(0).toUpperCase() +
+        strategyParam.slice(1).toLowerCase();
+      if (normalized in PRESETS) {
+        const preset = normalized as
+          | 'Aggressive'
+          | 'Balanced'
+          | 'Defensive'
+          | 'Custom';
+        setActivePreset(preset);
+        setPrioritizeIdx(0);
+        setRows(PRESETS[preset].map((r) => ({ ...r })));
+      }
+    }
+  }, []);
 
   const { fetchStatuses } = useQuoteResolver(rows, setRows);
 
@@ -93,6 +117,8 @@ export default function Page() {
     // Deep copy to avoid accidental state linkage
     const next = PRESETS[preset].map((r) => ({ ...r }));
     setRows(next);
+    // Update URL with strategy query param
+    router.push(`?strategy=${preset.toLowerCase()}`, { scroll: false });
   }
 
   return (
