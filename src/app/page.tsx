@@ -249,14 +249,49 @@ function PortfolioContent() {
               <label className="text-sm text-neutral-700 dark:text-neutral-300">
                 Monthly Budget (CAD)
               </label>
-              <NumericInput
-                prefix="$"
-                step={1}
-                min={0}
-                value={amount}
-                onNumberChange={setAmount}
-                className="w-full text-center rounded-lg border border-neutral-300 dark:border-neutral-600 p-2"
-              />
+              <div className="relative w-full rounded-lg border border-neutral-300 dark:border-neutral-600 p-2 flex items-center">
+                <span className="text-neutral-900 dark:text-neutral-100">
+                  $
+                </span>
+                <NumericInput
+                  step={1}
+                  min={0}
+                  value={amount}
+                  onNumberChange={setAmount}
+                  className="flex-1 text-right bg-transparent border-none outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                Share Type
+              </label>
+              <div className="flex flex-row gap-2 p-2 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+                <label className="flex items-center gap-2 cursor-pointer flex-1">
+                  <input
+                    type="radio"
+                    name="shareType"
+                    checked={!fractional}
+                    onChange={() => setFractional(false)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Whole
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer flex-1">
+                  <input
+                    type="radio"
+                    name="shareType"
+                    checked={fractional}
+                    onChange={() => setFractional(true)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Fractional
+                  </span>
+                </label>
+              </div>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm text-neutral-700 dark:text-neutral-300">
@@ -268,23 +303,6 @@ function PortfolioContent() {
                   {fxLoading ? '...' : usdToCad.toFixed(2)}
                 </span>
               </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm text-neutral-700 dark:text-neutral-300">
-                Share Type
-              </label>
-              <label className="flex items-center gap-2 p-2 cursor-pointer border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                <input
-                  type="checkbox"
-                  id="fractional-toggle"
-                  checked={fractional}
-                  onChange={(e) => setFractional(e.target.checked)}
-                  className="w-4 h-4 cursor-pointer"
-                />
-                <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                  Fractional Shares
-                </span>
-              </label>
             </div>
           </div>
         </div>
@@ -372,7 +390,7 @@ function PortfolioContent() {
                 )}
               </div>
             ) : (
-              <div className="mb-16" />
+              <div className="mb-0 lg:mb-16" />
             )}
           </div>
         </div>

@@ -37,7 +37,7 @@ export default function SharesToPurchase({
             <thead className="bg-neutral-50 dark:bg-neutral-800">
               <tr className="border-b border-neutral-200 dark:border-neutral-700">
                 <Th>Symbol</Th>
-                <Th>Buy (shares)</Th>
+                <Th>Shares</Th>
                 <Th>Cost (CAD)</Th>
               </tr>
             </thead>
@@ -76,7 +76,7 @@ export default function SharesToPurchase({
                 </Td>
               </tr>
               <tr className="border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
-                <Td className="font-medium text-left">Total (spent)</Td>
+                <Td className="font-medium text-left">Total spent</Td>
                 <Td>&nbsp;</Td>
                 <Td className="text-right font-medium">
                   ${allocation.spent.toFixed(2)} CAD
