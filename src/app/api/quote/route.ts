@@ -14,6 +14,7 @@ const STOOQ_URL = 'https://stooq.com/q/l/?s=';
 const STOOQ_FIELDS = '&f=sd2t2ohlcv&h&e=csv';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com/price';
 const ALPHA_VANTAGE_URL = 'https://www.alphavantage.co/query';
+const INVESTING_COM_URL = 'https://ca.investing.com';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes - helps with overlapping symbols across presets
 
 type QuotePayload = {
@@ -187,6 +188,58 @@ async function fetchAlphaVantage(
         return { price: parsed, currency: inferCurrency(symbol) };
       }
     }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchInvestingCom(
+  symbol: string
+): Promise<{ price: number; currency: 'USD' | 'CAD' } | null> {
+  try {
+    // Map symbol to investing.com URL format
+    // For ETFs with .NE suffix, try the ETF path
+    let slug = symbol.toLowerCase().replace(/\.(ne|to|tsx)$/, '');
+    
+    // Try ETF path first for .NE symbols
+    const paths = symbol.endsWith('.NE') 
+      ? [`/etfs/${slug}`, `/equities/${slug}`]
+      : [`/equities/${slug}`, `/etfs/${slug}`];
+    
+    for (const path of paths) {
+      const url = `${INVESTING_COM_URL}${path}`;
+      const r = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'Accept': 'text/html',
+        },
+      });
+      
+      if (!r.ok) continue;
+      
+      const html = await r.text();
+      
+      // Look for price in common patterns on Investing.com
+      const patterns = [
+        /<span[^>]*class="[^"]*last-price-value[^"]*"[^>]*>([^<]+)</i,
+        /<div[^>]*data-test="instrument-price-last"[^>]*>([^<]+)</i,
+        /"last":([0-9.]+)/i,
+      ];
+      
+      for (const pattern of patterns) {
+        const match = html.match(pattern);
+        if (match) {
+          const priceStr = match[1].replace(/[^0-9.]/g, '');
+          const price = Number(priceStr);
+          if (Number.isFinite(price) && price > 0) {
+            return { price, currency: inferCurrency(symbol) };
+          }
+        }
+      }
+    }
+    
     return null;
   } catch {
     return null;
@@ -404,6 +457,36 @@ export async function GET(req: Request) {
         errors.push({
           symbol: sym,
           provider: 'alphavantage',
+          message: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+
+    try {
+      const investingCom = await fetchInvestingCom(sym);
+      if (investingCom) {
+        const payload = {
+          input: raw,
+          resolved: sym,
+          price: investingCom.price,
+          currency: investingCom.currency,
+          provider: 'investing.com',
+        };
+        if (!debug) setCachedQuote(raw, payload);
+        return NextResponse.json(payload);
+      }
+      if (debug) {
+        errors.push({
+          symbol: sym,
+          provider: 'investing.com',
+          message: 'No quote in response',
+        });
+      }
+    } catch (err) {
+      if (debug) {
+        errors.push({
+          symbol: sym,
+          provider: 'investing.com',
           message: err instanceof Error ? err.message : 'Unknown error',
         });
       }
