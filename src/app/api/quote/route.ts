@@ -1,23 +1,26 @@
 // src/app/api/quote/route.ts
-import yahooFinance from "yahoo-finance2";
-import { NextResponse } from "next/server";
+import yahooFinance from 'yahoo-finance2';
+import { NextResponse } from 'next/server';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
-const SUFFIXES = ["", ".TO", ".NE", ".TSX", ".CN"];
-const CAD_SUFFIXES = new Set([".TO", ".NE", ".TSX", ".CN"]);
+const SUFFIXES = ['', '.TO', '.NE', '.TSX', '.CN'];
+const CAD_SUFFIXES = new Set(['.TO', '.NE', '.TSX', '.CN']);
 const YAHOO_QUOTE_URL =
-  "https://query1.finance.yahoo.com/v7/finance/quote?symbols=";
-const YAHOO_UA = "Mozilla/5.0 (compatible; stock-investment-calculator/1.0)";
-const STOOQ_URL = "https://stooq.com/q/l/?s=";
-const STOOQ_FIELDS = "&f=sd2t2ohlcv&h&e=csv";
-const CACHE_TTL_MS = 60_000;
+  'https://query1.finance.yahoo.com/v7/finance/quote?symbols=';
+const YAHOO_CSV_URL = 'https://query1.finance.yahoo.com/v7/finance/download/';
+const YAHOO_UA = 'Mozilla/5.0 (compatible; stock-investment-calculator/1.0)';
+const STOOQ_URL = 'https://stooq.com/q/l/?s=';
+const STOOQ_FIELDS = '&f=sd2t2ohlcv&h&e=csv';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com/price';
+const ALPHA_VANTAGE_URL = 'https://www.alphavantage.co/query';
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes - helps with overlapping symbols across presets
 
 type QuotePayload = {
   input: string;
   resolved: string;
   price: number;
-  currency: "USD" | "CAD" | string;
+  currency: 'USD' | 'CAD' | string;
   provider: string;
 };
 
@@ -25,11 +28,18 @@ const quoteCache = new Map<string, { ts: number; data: QuotePayload }>();
 
 function getCachedQuote(key: string): QuotePayload | null {
   const cached = quoteCache.get(key);
-  if (!cached) return null;
-  if (Date.now() - cached.ts > CACHE_TTL_MS) {
-    quoteCache.delete(key);
+  if (!cached) {
+    console.log(`[Cache MISS] ${key}`);
     return null;
   }
+  if (Date.now() - cached.ts > CACHE_TTL_MS) {
+    quoteCache.delete(key);
+    console.log(`[Cache EXPIRED] ${key}`);
+    return null;
+  }
+  console.log(
+    `[Cache HIT] ${key} (age: ${Math.round((Date.now() - cached.ts) / 1000)}s)`
+  );
   return cached.data;
 }
 
@@ -37,23 +47,23 @@ function setCachedQuote(key: string, data: QuotePayload) {
   quoteCache.set(key, { ts: Date.now(), data });
 }
 
-function inferCurrency(symbol: string): "USD" | "CAD" {
+function inferCurrency(symbol: string): 'USD' | 'CAD' {
   for (const suf of CAD_SUFFIXES) {
-    if (symbol.endsWith(suf)) return "CAD";
+    if (symbol.endsWith(suf)) return 'CAD';
   }
-  return "USD";
+  return 'USD';
 }
 
 function toStooqSymbol(symbol: string): string {
   const lower = symbol.toLowerCase();
-  if (lower.endsWith(".us") || lower.endsWith(".ca")) return lower;
+  if (lower.endsWith('.us') || lower.endsWith('.ca')) return lower;
   if (
-    lower.endsWith(".to") ||
-    lower.endsWith(".ne") ||
-    lower.endsWith(".tsx") ||
-    lower.endsWith(".cn")
+    lower.endsWith('.to') ||
+    lower.endsWith('.ne') ||
+    lower.endsWith('.tsx') ||
+    lower.endsWith('.cn')
   ) {
-    return lower.replace(/\.(to|ne|tsx|cn)$/, ".ca");
+    return lower.replace(/\.(to|ne|tsx|cn)$/, '.ca');
   }
   return `${lower}.us`;
 }
@@ -63,27 +73,43 @@ function parseStooqCsv(csv: string): number | null {
   if (!trimmed) return null;
   const lines = trimmed.split(/\r?\n/);
   if (lines.length === 0) return null;
-  if (lines.length === 1 && lines[0].toLowerCase().includes("no data")) {
+  if (lines.length === 1 && lines[0].toLowerCase().includes('no data')) {
     return null;
   }
 
   let header: string[] = [];
   let values: string[] = [];
   if (lines.length >= 2) {
-    header = lines[0].split(",");
-    values = lines[1].split(",");
-    if (header[0].trim().toLowerCase() !== "symbol") {
-      header = ["Symbol", "Date", "Time", "Open", "High", "Low", "Close", "Volume"];
-      values = lines[0].split(",");
+    header = lines[0].split(',');
+    values = lines[1].split(',');
+    if (header[0].trim().toLowerCase() !== 'symbol') {
+      header = [
+        'Symbol',
+        'Date',
+        'Time',
+        'Open',
+        'High',
+        'Low',
+        'Close',
+        'Volume',
+      ];
+      values = lines[0].split(',');
     }
   } else {
-    header = ["Symbol", "Date", "Time", "Open", "High", "Low", "Close", "Volume"];
-    values = lines[0].split(",");
+    header = [
+      'Symbol',
+      'Date',
+      'Time',
+      'Open',
+      'High',
+      'Low',
+      'Close',
+      'Volume',
+    ];
+    values = lines[0].split(',');
   }
 
-  const closeIdx = header.findIndex(
-    (h) => h.trim().toLowerCase() === "close"
-  );
+  const closeIdx = header.findIndex((h) => h.trim().toLowerCase() === 'close');
   const raw = closeIdx >= 0 ? values[closeIdx] : values[6];
   const price = Number(raw);
   return Number.isFinite(price) ? price : null;
@@ -91,50 +117,129 @@ function parseStooqCsv(csv: string): number | null {
 
 async function fetchStooqQuote(
   symbol: string
-): Promise<{ price: number; currency: "USD" | "CAD" } | null> {
+): Promise<{ price: number; currency: 'USD' | 'CAD' } | null> {
   const stooqSymbol = toStooqSymbol(symbol);
   const r = await fetch(
     `${STOOQ_URL}${encodeURIComponent(stooqSymbol)}${STOOQ_FIELDS}`,
-    { cache: "no-store" }
+    { cache: 'no-store' }
   );
   if (!r.ok) return null;
   const text = await r.text();
   const price = parseStooqCsv(text);
-  if (typeof price !== "number") return null;
+  if (typeof price !== 'number') return null;
   return { price, currency: inferCurrency(symbol) };
 }
 
+async function fetchTwelveData(
+  symbol: string
+): Promise<{ price: number; currency: 'USD' | 'CAD' } | null> {
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  if (!apiKey) {
+    console.log('[TwelveData] Skipping - no API key configured');
+    return null;
+  }
+
+  try {
+    const r = await fetch(
+      `${TWELVE_DATA_URL}?symbol=${encodeURIComponent(
+        symbol
+      )}&apikey=${apiKey}`,
+      { cache: 'no-store' }
+    );
+    if (!r.ok) return null;
+    const data = await r.json();
+    const price = data?.price;
+    if (typeof price === 'string') {
+      const parsed = Number(price);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return { price: parsed, currency: inferCurrency(symbol) };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchAlphaVantage(
+  symbol: string
+): Promise<{ price: number; currency: 'USD' | 'CAD' } | null> {
+  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+  if (!apiKey) {
+    console.log('[AlphaVantage] Skipping - no API key configured');
+    return null;
+  }
+
+  try {
+    const r = await fetch(
+      `${ALPHA_VANTAGE_URL}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(
+        symbol
+      )}&apikey=${apiKey}`,
+      { cache: 'no-store' }
+    );
+    if (!r.ok) return null;
+    const data = await r.json();
+    const quote = data?.['Global Quote'];
+    const priceStr = quote?.['05. price'];
+    if (typeof priceStr === 'string') {
+      const parsed = Number(priceStr);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return { price: parsed, currency: inferCurrency(symbol) };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Quote API - Waterfall provider strategy:
+ * 1. yahoo-finance2 (fastest, most reliable when not rate-limited)
+ * 2. yahoo-direct (alternative Yahoo endpoint)
+ * 3. stooq (free, good US stock coverage)
+ * 4. twelvedata (free tier limited to US stocks only)
+ * 5. alphavantage (free 500 calls/day, supports Canadian TSX stocks)
+ */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const raw = (searchParams.get("symbol") || "").trim().toUpperCase();
-  const debug = searchParams.get("debug") === "1";
+  const raw = (searchParams.get('symbol') || '').trim().toUpperCase();
+  const debug = searchParams.get('debug') === '1';
   const errors: Array<{ symbol: string; provider: string; message: string }> =
     [];
   const cached = debug ? null : getCachedQuote(raw);
 
   if (!raw) {
-    return NextResponse.json({ error: "Missing symbol" }, { status: 400 });
+    return NextResponse.json({ error: 'Missing symbol' }, { status: 400 });
   }
   if (cached) return NextResponse.json(cached);
 
   let yahooBlocked = false;
   let yahooDirectBlocked = false;
 
-  for (const suf of SUFFIXES) {
+  // Check if user already provided a suffix
+  const hasExistingSuffix = Array.from(CAD_SUFFIXES).some((suffix) =>
+    raw.endsWith(suffix)
+  );
+
+  // If suffix exists, only try that exact symbol, otherwise try all suffixes
+  const suffixesToTry = hasExistingSuffix ? [''] : SUFFIXES;
+
+  for (const suf of suffixesToTry) {
     const sym = `${raw}${suf}`;
     if (!yahooBlocked) {
       try {
         const quote = await yahooFinance.quote(sym);
         if (
-          typeof quote?.regularMarketPrice === "number" &&
-          typeof quote?.currency === "string"
+          typeof quote?.regularMarketPrice === 'number' &&
+          typeof quote?.currency === 'string'
         ) {
           const payload = {
             input: raw,
             resolved: sym,
             price: quote.regularMarketPrice,
-            currency: quote.currency as "USD" | "CAD" | string,
-            provider: "yahoo-finance2",
+            currency: quote.currency as 'USD' | 'CAD' | string,
+            provider: 'yahoo-finance2',
           };
           if (!debug) setCachedQuote(raw, payload);
           return NextResponse.json(payload);
@@ -142,19 +247,19 @@ export async function GET(req: Request) {
         if (debug) {
           errors.push({
             symbol: sym,
-            provider: "yahoo-finance2",
-            message: "Missing price or currency in response",
+            provider: 'yahoo-finance2',
+            message: 'Missing price or currency in response',
           });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
-        if (message.toLowerCase().includes("too many requests")) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        if (message.toLowerCase().includes('too many requests')) {
           yahooBlocked = true;
         }
         if (debug) {
           errors.push({
             symbol: sym,
-            provider: "yahoo-finance2",
+            provider: 'yahoo-finance2',
             message,
           });
         }
@@ -164,21 +269,21 @@ export async function GET(req: Request) {
     if (!yahooDirectBlocked) {
       try {
         const r = await fetch(`${YAHOO_QUOTE_URL}${encodeURIComponent(sym)}`, {
-          cache: "no-store",
-          headers: { "User-Agent": YAHOO_UA },
+          cache: 'no-store',
+          headers: { 'User-Agent': YAHOO_UA },
         });
         if (r.ok) {
           const data = await r.json();
           const result = data?.quoteResponse?.result?.[0];
           const price = result?.regularMarketPrice;
           const currency = result?.currency;
-          if (typeof price === "number" && typeof currency === "string") {
+          if (typeof price === 'number' && typeof currency === 'string') {
             const payload = {
               input: raw,
               resolved: sym,
               price,
               currency,
-              provider: "yahoo-direct",
+              provider: 'yahoo-direct',
             };
             if (!debug) setCachedQuote(raw, payload);
             return NextResponse.json(payload);
@@ -186,8 +291,8 @@ export async function GET(req: Request) {
           if (debug) {
             errors.push({
               symbol: sym,
-              provider: "yahoo-direct",
-              message: "Missing price or currency in response",
+              provider: 'yahoo-direct',
+              message: 'Missing price or currency in response',
             });
           }
         } else {
@@ -197,17 +302,17 @@ export async function GET(req: Request) {
           if (debug) {
             errors.push({
               symbol: sym,
-              provider: "yahoo-direct",
+              provider: 'yahoo-direct',
               message: `HTTP ${r.status} ${r.statusText}`,
             });
           }
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = err instanceof Error ? err.message : 'Unknown error';
         if (debug) {
           errors.push({
             symbol: sym,
-            provider: "yahoo-direct",
+            provider: 'yahoo-direct',
             message,
           });
         }
@@ -222,7 +327,7 @@ export async function GET(req: Request) {
           resolved: sym,
           price: stooq.price,
           currency: stooq.currency,
-          provider: "stooq",
+          provider: 'stooq',
         };
         if (!debug) setCachedQuote(raw, payload);
         return NextResponse.json(payload);
@@ -230,16 +335,76 @@ export async function GET(req: Request) {
       if (debug) {
         errors.push({
           symbol: sym,
-          provider: "stooq",
-          message: "No quote in response",
+          provider: 'stooq',
+          message: 'No quote in response',
         });
       }
     } catch (err) {
       if (debug) {
         errors.push({
           symbol: sym,
-          provider: "stooq",
-          message: err instanceof Error ? err.message : "Unknown error",
+          provider: 'stooq',
+          message: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+
+    try {
+      const twelveData = await fetchTwelveData(sym);
+      if (twelveData) {
+        const payload = {
+          input: raw,
+          resolved: sym,
+          price: twelveData.price,
+          currency: twelveData.currency,
+          provider: 'twelvedata',
+        };
+        if (!debug) setCachedQuote(raw, payload);
+        return NextResponse.json(payload);
+      }
+      if (debug) {
+        errors.push({
+          symbol: sym,
+          provider: 'twelvedata',
+          message: 'No quote in response',
+        });
+      }
+    } catch (err) {
+      if (debug) {
+        errors.push({
+          symbol: sym,
+          provider: 'twelvedata',
+          message: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+
+    try {
+      const alphaVantage = await fetchAlphaVantage(sym);
+      if (alphaVantage) {
+        const payload = {
+          input: raw,
+          resolved: sym,
+          price: alphaVantage.price,
+          currency: alphaVantage.currency,
+          provider: 'alphavantage',
+        };
+        if (!debug) setCachedQuote(raw, payload);
+        return NextResponse.json(payload);
+      }
+      if (debug) {
+        errors.push({
+          symbol: sym,
+          provider: 'alphavantage',
+          message: 'No quote in response',
+        });
+      }
+    } catch (err) {
+      if (debug) {
+        errors.push({
+          symbol: sym,
+          provider: 'alphavantage',
+          message: err instanceof Error ? err.message : 'Unknown error',
         });
       }
     }
