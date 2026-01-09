@@ -200,7 +200,7 @@ async function fetchInvestingCom(
   try {
     // Map symbol to investing.com URL format
     // For ETFs with .NE suffix, try the ETF path
-    let slug = symbol.toLowerCase().replace(/\.(ne|to|tsx)$/, '');
+    const slug = symbol.toLowerCase().replace(/\.(ne|to|tsx)$/, '');
     
     // Try ETF path first for .NE symbols
     const paths = symbol.endsWith('.NE') 
