@@ -46,6 +46,29 @@ const PRESETS: Record<
   ], // your original default
 };
 
+// Helper to load custom portfolio from localStorage
+function loadCustomPortfolio(): {
+  rows: Row[];
+  prioritizeIdx: number;
+} | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const saved = localStorage.getItem('customPortfolio');
+    if (!saved) return null;
+    const data = JSON.parse(saved);
+    if (data?.rows && Array.isArray(data.rows)) {
+      return {
+        rows: data.rows,
+        prioritizeIdx: data.prioritizeIdx ?? 0,
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('Failed to load portfolio:', err);
+    return null;
+  }
+}
+
 function PortfolioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,45 +80,53 @@ function PortfolioContent() {
     setRate: setUsdToCad,
   } = useFxRate(1.4);
 
-  const initialRow = 'Aggressive';
-
-  const [prioritizeIdx, setPrioritizeIdx] = useState<number>(0);
-  const [activePreset, setActivePreset] = useState<
-    'Aggressive' | 'Balanced' | 'Defensive' | 'Custom'
-  >(initialRow);
-  const [rows, setRows] = useState<Row[]>(PRESETS[activePreset]);
-  const [saveMessage, setSaveMessage] = useState<string>('');
-
-  // Read strategy from URL query param on mount
-  useEffect(() => {
+  // Initialize state based on URL parameter
+  const getInitialPreset = ():
+    | 'Aggressive'
+    | 'Balanced'
+    | 'Defensive'
+    | 'Custom' => {
     const strategyParam = searchParams.get('strategy');
     if (strategyParam) {
       const normalized =
         strategyParam.charAt(0).toUpperCase() +
         strategyParam.slice(1).toLowerCase();
       if (normalized in PRESETS) {
-        const preset = normalized as
-          | 'Aggressive'
-          | 'Balanced'
-          | 'Defensive'
-          | 'Custom';
-        setActivePreset(preset);
-        setPrioritizeIdx(0);
-
-        // Load from localStorage if Custom strategy
-        if (preset === 'Custom') {
-          const saved = loadCustomPortfolio();
-          if (saved) {
-            setRows(saved.rows);
-            setPrioritizeIdx(saved.prioritizeIdx);
-            return;
-          }
-        }
-
-        setRows(PRESETS[preset].map((r) => ({ ...r })));
+        return normalized as 'Aggressive' | 'Balanced' | 'Defensive' | 'Custom';
       }
     }
-  }, []);
+    return 'Aggressive';
+  };
+
+  const getInitialRows = (): Row[] => {
+    const preset = getInitialPreset();
+    if (preset === 'Custom') {
+      const saved = loadCustomPortfolio();
+      if (saved) {
+        return saved.rows;
+      }
+    }
+    return PRESETS[preset].map((r) => ({ ...r }));
+  };
+
+  const getInitialPriority = (): number => {
+    const preset = getInitialPreset();
+    if (preset === 'Custom') {
+      const saved = loadCustomPortfolio();
+      if (saved) {
+        return saved.prioritizeIdx;
+      }
+    }
+    return 0;
+  };
+
+  const [activePreset, setActivePreset] = useState<
+    'Aggressive' | 'Balanced' | 'Defensive' | 'Custom'
+  >(getInitialPreset);
+  const [rows, setRows] = useState<Row[]>(getInitialRows);
+  const [prioritizeIdx, setPrioritizeIdx] =
+    useState<number>(getInitialPriority);
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   const { fetchStatuses } = useQuoteResolver(rows, setRows);
 
@@ -134,27 +165,6 @@ function PortfolioContent() {
       console.error('Failed to save portfolio:', err);
       setSaveMessage('Save failed');
       setTimeout(() => setSaveMessage(''), 2000);
-    }
-  }
-
-  function loadCustomPortfolio(): {
-    rows: Row[];
-    prioritizeIdx: number;
-  } | null {
-    try {
-      const saved = localStorage.getItem('customPortfolio');
-      if (!saved) return null;
-      const data = JSON.parse(saved);
-      if (data?.rows && Array.isArray(data.rows)) {
-        return {
-          rows: data.rows,
-          prioritizeIdx: data.prioritizeIdx ?? 0,
-        };
-      }
-      return null;
-    } catch (err) {
-      console.error('Failed to load portfolio:', err);
-      return null;
     }
   }
 

@@ -114,6 +114,7 @@ export default function Allocations({
                     <input
                       value={r.symbol}
                       onChange={(e) => updateSymbol(i, e.target.value)}
+                      onClick={(e) => e.currentTarget.select()}
                       className={
                         disabled
                           ? 'w-20 text-center p-2 border border-transparent bg-transparent text-neutral-900 dark:text-neutral-100'
