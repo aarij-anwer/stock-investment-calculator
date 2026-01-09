@@ -3,6 +3,7 @@
 import React from 'react';
 import type { Row } from '@/lib/types';
 import NumericInput from './NumericInput';
+import RemoveIcon from './RemoveIcon';
 
 /* ---------- Types ---------- */
 type Status = 'idle' | 'loading' | 'ok' | 'error';
@@ -18,6 +19,7 @@ type AllocationsProps = {
   fetchStatuses: Status[];
   totalWeightPct: number;
   disabled?: boolean;
+  fractional?: boolean;
 };
 
 /* ---------- Component ---------- */
@@ -28,6 +30,7 @@ export default function Allocations({
   setPrioritizeIdx,
   fetchStatuses,
   disabled,
+  fractional,
 }: AllocationsProps) {
   const addRow = () =>
     setRows((prev) => [...prev, { symbol: '', weightPct: 0 }]);
@@ -65,12 +68,16 @@ export default function Allocations({
         <table className="w-full border-collapse text-neutral-900 dark:text-neutral-100">
           <thead className="bg-neutral-50 dark:bg-neutral-800">
             <tr className="border-b border-neutral-200 dark:border-neutral-700">
-              {!disabled && <Th>Priority</Th>}
-              <Th>Symbol (input)</Th>
-              <Th>Currency</Th>
-              <Th>Price</Th>
-              <Th>Weight % (input)</Th>
-              {!disabled && <Th>&nbsp;</Th>}
+              <Th compact={!disabled} className={!disabled ? 'px-2' : ''}>
+                Symbol
+              </Th>
+              <Th compact={!disabled}>Currency</Th>
+              <Th compact={!disabled}>Price</Th>
+              <Th compact={!disabled}>%</Th>
+              {!disabled && !fractional && (
+                <Th compact={!disabled}>Priority</Th>
+              )}
+              {!disabled && <Th compact={!disabled}>&nbsp;</Th>}
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-neutral-900">
@@ -99,34 +106,23 @@ export default function Allocations({
 
               return (
                 <tr key={i} className="">
-                  {!disabled && (
-                    <Td className="">
-                      <input
-                        type="radio"
-                        name="priority"
-                        checked={i === prioritizeIdx}
-                        onChange={() => setPrioritizeIdx(i)}
-                        aria-label="Set as priority"
-                      />
-                    </Td>
-                  )}
-                  <Td>
+                  <Td compact={false}>
                     <input
                       value={r.symbol}
                       onChange={(e) => updateSymbol(i, e.target.value)}
                       onClick={(e) => e.currentTarget.select()}
                       className={
                         disabled
-                          ? 'w-20 text-center p-2 border border-transparent bg-transparent text-neutral-900 dark:text-neutral-100'
-                          : 'w-20 sm:w-full text-center rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-400 p-2'
+                          ? 'w-24 text-center p-2 border border-transparent bg-transparent text-neutral-900 dark:text-neutral-100'
+                          : 'w-24 sm:w-full text-center rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-400 p-2'
                       }
                       placeholder="e.g., SPUS"
                       readOnly={disabled}
                     />
                   </Td>
-                  <Td>{showCurrency}</Td>
-                  <Td>{showPrice}</Td>
-                  <Td>
+                  <Td compact={!disabled}>{showCurrency}</Td>
+                  <Td compact={!disabled}>{showPrice}</Td>
+                  <Td compact={!disabled}>
                     <NumericInput
                       step={1}
                       min={0}
@@ -136,27 +132,47 @@ export default function Allocations({
                           ? Math.round(r.weightPct!)
                           : 0
                       }
-                      onNumberChange={(next) => updateWeight(i, next)}
+                      onNumberChange={(next) =>
+                        updateWeight(i, Math.min(100, next))
+                      }
                       className={
                         disabled
-                          ? 'w-16 text-center p-2 '
-                          : 'w-16 text-center rounded-md border border-neutral-300 p-2 sm:w-full'
+                          ? 'w-12 text-center p-2 '
+                          : 'w-12 text-center rounded-md border border-neutral-300 p-2'
                       }
                       readOnly={disabled}
                     />
                   </Td>
+                  {!disabled && !fractional && (
+                    <Td className="" compact={true}>
+                      <input
+                        type="radio"
+                        name="priority"
+                        checked={i === prioritizeIdx}
+                        onChange={() => setPrioritizeIdx(i)}
+                        aria-label="Set as priority"
+                      />
+                    </Td>
+                  )}
                   {!disabled && (
-                    <Td>
+                    <Td compact={true}>
                       <button
                         onClick={() => removeRow(i)}
                         disabled={rows.length === 1}
                         className={
                           rows.length > 1
-                            ? 'px-3 py-2 rounded-md border border-red-300 text-red-700 hover:bg-red-50'
-                            : 'px-3 py-2 rounded-md border border-neutral-300 text-neutral-500'
+                            ? 'p-1 rounded-md group transition-colors cursor-pointer'
+                            : 'p-1 rounded-md cursor-not-allowed'
                         }
+                        aria-label="Remove row"
                       >
-                        Remove
+                        <RemoveIcon
+                          className={
+                            rows.length > 1
+                              ? 'w-5 h-5 text-red-600 dark:text-red-500 group-hover:text-red-800 dark:group-hover:text-red-700'
+                              : 'w-5 h-5 text-neutral-400 dark:text-neutral-600'
+                          }
+                        />
                       </button>
                     </Td>
                   )}
@@ -174,12 +190,18 @@ export default function Allocations({
 function Th({
   children,
   className = '',
+  compact = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  compact?: boolean;
 }) {
   return (
-    <th className={`text-center text-sm font-medium px-3 py-2 ${className}`}>
+    <th
+      className={`text-center text-sm font-medium ${
+        compact ? 'py-2' : 'px-3 py-2'
+      } ${className}`}
+    >
       {children}
     </th>
   );
@@ -188,12 +210,20 @@ function Th({
 function Td({
   children,
   className = '',
+  compact = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  compact?: boolean;
 }) {
   return (
-    <td className={`text-center p-2 align-middle ${className}`}>{children}</td>
+    <td
+      className={`text-center ${
+        compact ? 'p-1.5' : 'p-2'
+      } align-middle ${className}`}
+    >
+      {children}
+    </td>
   );
 }
 

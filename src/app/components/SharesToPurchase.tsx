@@ -22,23 +22,10 @@ export default function SharesToPurchase({
   setFractional: (val: boolean) => void;
 }) {
   return (
-    <section className="mt-8">
-      <div className="flex flex-row justify-between items-center mb-2">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-          Shares to Purchase
-        </h2>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={fractional}
-            onChange={(e) => setFractional(e.target.checked)}
-            className="w-4 h-4 cursor-pointer"
-          />
-          <span className="text-sm text-neutral-700 dark:text-neutral-300">
-            Fractional Shares
-          </span>
-        </label>
-      </div>
+    <>
+      <h3 className="text-xl lg:text-2xl font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+        Shares to Purchase
+      </h3>
 
       {!allocation ? (
         <p className="text-neutral-600 dark:text-neutral-300">
@@ -106,7 +93,7 @@ export default function SharesToPurchase({
           </table>
         </div>
       )}
-    </section>
+    </>
   );
 }
 

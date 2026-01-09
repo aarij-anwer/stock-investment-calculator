@@ -14,6 +14,8 @@ import {
 import Allocations from './components/Allocations';
 import NumericInput from './components/NumericInput';
 import SharesToPurchase from './components/SharesToPurchase';
+import TypewriterList from './components/TypewriterList';
+import TypewriterText from './components/TypewriterText';
 
 /** Preset strategies */
 const PRESETS: Record<
@@ -195,107 +197,197 @@ function PortfolioContent() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
-      <section className="flex flex-col mb-4 gap-1">
-        <h1 className="text-3xl font-bold">Smart Portfolio Allocator</h1>
-        <p className="text-xl">
-          Build a smarter monthly portfolio—by percent, by priority, by price.
-        </p>
-        <p className="text-neutral-600 text-base  dark:text-neutral-100">
-          Enter your monthly budget, pick a curated portfolio aligned to your
-          preferences—or customize a bespoke mix—and get whole-share buys in
-          CAD.{' '}
-        </p>
-        <div className="flex items-center gap-1 text-neutral-600  dark:text-neutral-100">
-          <label className="block text-sm">(USD → CAD:</label>
-          <label className="block text-sm">
-            {fxLoading ? '' : usdToCad.toFixed(2)})
-          </label>
-        </div>
-      </section>
-
-      <section className="mb-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm">Monthly budget (CAD)</label>
-          <NumericInput
-            prefix="$"
-            step={1}
-            min={0}
-            value={amount}
-            onNumberChange={setAmount}
-            className="w-24 text-center rounded-lg border border-neutral-300 p-1"
+    <main className="mx-auto max-w-5xl p-6 mb-6 lg:mb-10">
+      {/* Header Section */}
+      <section className="mb-6">
+        <h1 className="text-5xl font-bold mb-2">Smart Portfolio Allocator</h1>
+        <p className="text-xl mb-2">Build a smarter monthly portfolio.</p>
+        <div className="relative mb-3">
+          {/* Hidden content to reserve space */}
+          <ul className="text-neutral-600 text-base dark:text-neutral-400 space-y-1.5 invisible">
+            <li className="flex items-start gap-2">
+              <span className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5">
+                ✓
+              </span>
+              <span>
+                Choose preset strategies or customize your own portfolio mix
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5">
+                ✓
+              </span>
+              <span>Real-time pricing with automatic CAD/USD conversion</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5">
+                ✓
+              </span>
+              <span>Calculate whole or fractional share purchases</span>
+            </li>
+          </ul>
+          {/* Visible animated content */}
+          <TypewriterList
+            items={[
+              'Choose preset strategies or customize your own portfolio mix',
+              'Real-time pricing with automatic CAD/USD conversion',
+              'Calculate whole or fractional share purchases',
+            ]}
+            delay={15}
+            itemDelay={200}
+            className="text-neutral-600 text-base dark:text-neutral-400 space-y-1.5 absolute top-0 left-0 right-0"
           />
         </div>
+
+        {/* Configuration Card */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 shadow-sm">
+          <h3 className="text-xl lg:text-2xl font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
+            Investment Setup
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                Monthly Budget (CAD)
+              </label>
+              <NumericInput
+                prefix="$"
+                step={1}
+                min={0}
+                value={amount}
+                onNumberChange={setAmount}
+                className="w-full text-center rounded-lg border border-neutral-300 dark:border-neutral-600 p-2"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                Exchange Rate
+              </label>
+              <div className="text-center p-2 text-neutral-600 dark:text-neutral-400 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                USD → CAD:{' '}
+                <span className="font-medium">
+                  {fxLoading ? '...' : usdToCad.toFixed(2)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                Share Type
+              </label>
+              <label className="flex items-center gap-2 p-2 cursor-pointer border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                <input
+                  type="checkbox"
+                  id="fractional-toggle"
+                  checked={fractional}
+                  onChange={(e) => setFractional(e.target.checked)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                  Fractional Shares
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Strategy buttons */}
-      <div className="flex flex-col gap-2 mb-4 sm:flex-row">
-        {(['Aggressive', 'Defensive', 'Balanced', 'Custom'] as const).map(
-          (label) => {
-            const isActive = activePreset === label;
-            return (
-              <button
-                key={label}
-                onClick={() => applyPreset(label)}
-                className={
-                  isActive
-                    ? 'flex-1 px-3 py-2 rounded-md border border-blue-600 text-white bg-blue-600'
-                    : 'flex-1 px-3 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
-                }
-                aria-pressed={isActive}
-              >
-                {label}
-              </button>
-            );
-          }
-        )}
-      </div>
-
-      <Allocations
-        usdToCad={usdToCad}
-        fxLoading={fxLoading}
-        setUsdToCad={setUsdToCad}
-        rows={rows}
-        setRows={setRows}
-        prioritizeIdx={prioritizeIdx}
-        setPrioritizeIdx={setPrioritizeIdx}
-        fetchStatuses={fetchStatuses}
-        totalWeightPct={totalWeightPct}
-        disabled={activePreset !== 'Custom'}
-      />
-
-      {/* Save button for Custom portfolio */}
-      {activePreset === 'Custom' && (
-        <div className="mt-3 flex items-center gap-3">
-          <button
-            onClick={() =>
-              setRows((prev) => [...prev, { symbol: '', weightPct: 0 }])
-            }
-            className="px-4 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
-          >
-            Add row
-          </button>
-          <button
-            onClick={saveCustomPortfolio}
-            className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
-          >
-            Save!
-          </button>
-          {saveMessage && (
-            <span className="text-sm text-green-600 dark:text-green-400">
-              {saveMessage}
-            </span>
-          )}
+      {/* Strategy Selection Card */}
+      <section className="mb-6">
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 shadow-sm">
+          <h3 className="text-xl lg:text-2xl font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
+            Strategy
+          </h3>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {(['Aggressive', 'Defensive', 'Balanced', 'Custom'] as const).map(
+              (label) => {
+                const isActive = activePreset === label;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => applyPreset(label)}
+                    className={
+                      isActive
+                        ? 'flex-1 px-3 py-2 rounded-md border border-blue-600 text-white bg-blue-600 font-medium cursor-pointer'
+                        : 'flex-1 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800/60 cursor-pointer'
+                    }
+                    aria-pressed={isActive}
+                  >
+                    {label}
+                  </button>
+                );
+              }
+            )}
+          </div>
         </div>
-      )}
+      </section>
 
-      <SharesToPurchase
-        allocation={allocation}
-        cadPriceOf={cadPriceOf}
-        amount={amount}
-        fractional={fractional}
-        setFractional={setFractional}
-      />
+      {/* Two Column Layout: Portfolio Composition | Results */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Portfolio Composition */}
+        <div className="flex flex-col gap-6">
+          {/* Portfolio Composition Card */}
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 shadow-sm">
+            <h3 className="text-xl lg:text-2xl font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+              Portfolio Composition
+            </h3>
+            <Allocations
+              usdToCad={usdToCad}
+              fxLoading={fxLoading}
+              setUsdToCad={setUsdToCad}
+              rows={rows}
+              setRows={setRows}
+              prioritizeIdx={prioritizeIdx}
+              setPrioritizeIdx={setPrioritizeIdx}
+              fetchStatuses={fetchStatuses}
+              totalWeightPct={totalWeightPct}
+              disabled={activePreset !== 'Custom'}
+              fractional={fractional}
+            />
+
+            {/* Save button for Custom portfolio */}
+            {activePreset === 'Custom' ? (
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  onClick={() =>
+                    setRows((prev) => [...prev, { symbol: '', weightPct: 0 }])
+                  }
+                  disabled={rows.length >= 10}
+                  className={
+                    rows.length >= 10
+                      ? 'px-4 py-2 rounded-md border border-neutral-300 dark:border-neutral-600 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+                      : 'px-4 py-2 rounded-md border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800/60 cursor-pointer'
+                  }
+                >
+                  Add row {rows.length >= 10 && '(max 10)'}
+                </button>
+                <button
+                  onClick={saveCustomPortfolio}
+                  className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 cursor-pointer"
+                >
+                  Save!
+                </button>
+                {saveMessage && (
+                  <span className="text-sm text-green-600 dark:text-green-400">
+                    {saveMessage}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="mb-16" />
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Purchase Results */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 shadow-sm">
+          <SharesToPurchase
+            allocation={allocation}
+            cadPriceOf={cadPriceOf}
+            amount={amount}
+            fractional={fractional}
+            setFractional={setFractional}
+          />
+        </div>
+      </div>
     </main>
   );
 }
