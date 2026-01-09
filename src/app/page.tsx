@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Row } from '@/lib/types';
 import {
@@ -46,7 +46,7 @@ const PRESETS: Record<
   ], // your original default
 };
 
-export default function Page() {
+function PortfolioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -64,6 +64,7 @@ export default function Page() {
     'Aggressive' | 'Balanced' | 'Defensive' | 'Custom'
   >(initialRow);
   const [rows, setRows] = useState<Row[]>(PRESETS[activePreset]);
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   // Read strategy from URL query param on mount
   useEffect(() => {
@@ -80,6 +81,17 @@ export default function Page() {
           | 'Custom';
         setActivePreset(preset);
         setPrioritizeIdx(0);
+
+        // Load from localStorage if Custom strategy
+        if (preset === 'Custom') {
+          const saved = loadCustomPortfolio();
+          if (saved) {
+            setRows(saved.rows);
+            setPrioritizeIdx(saved.prioritizeIdx);
+            return;
+          }
+        }
+
         setRows(PRESETS[preset].map((r) => ({ ...r })));
       }
     }
@@ -109,11 +121,60 @@ export default function Page() {
     [rows, usdToCad]
   );
 
+  function saveCustomPortfolio() {
+    try {
+      const data = {
+        rows,
+        prioritizeIdx,
+      };
+      localStorage.setItem('customPortfolio', JSON.stringify(data));
+      setSaveMessage('Saved!');
+      setTimeout(() => setSaveMessage(''), 2000);
+    } catch (err) {
+      console.error('Failed to save portfolio:', err);
+      setSaveMessage('Save failed');
+      setTimeout(() => setSaveMessage(''), 2000);
+    }
+  }
+
+  function loadCustomPortfolio(): {
+    rows: Row[];
+    prioritizeIdx: number;
+  } | null {
+    try {
+      const saved = localStorage.getItem('customPortfolio');
+      if (!saved) return null;
+      const data = JSON.parse(saved);
+      if (data?.rows && Array.isArray(data.rows)) {
+        return {
+          rows: data.rows,
+          prioritizeIdx: data.prioritizeIdx ?? 0,
+        };
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to load portfolio:', err);
+      return null;
+    }
+  }
+
   function applyPreset(
     preset: 'Aggressive' | 'Balanced' | 'Defensive' | 'Custom'
   ) {
     setActivePreset(preset);
     setPrioritizeIdx(0);
+
+    // Load from localStorage if Custom
+    if (preset === 'Custom') {
+      const saved = loadCustomPortfolio();
+      if (saved) {
+        setRows(saved.rows);
+        setPrioritizeIdx(saved.prioritizeIdx);
+        router.push(`?strategy=${preset.toLowerCase()}`, { scroll: false });
+        return;
+      }
+    }
+
     // Deep copy to avoid accidental state linkage
     const next = PRESETS[preset].map((r) => ({ ...r }));
     setRows(next);
@@ -191,11 +252,38 @@ export default function Page() {
         disabled={activePreset !== 'Custom'}
       />
 
+      {/* Save button for Custom portfolio */}
+      {activePreset === 'Custom' && (
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            onClick={saveCustomPortfolio}
+            className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
+          >
+            Save Custom Portfolio
+          </button>
+          {saveMessage && (
+            <span className="text-sm text-green-600 dark:text-green-400">
+              {saveMessage}
+            </span>
+          )}
+        </div>
+      )}
+
       <SharesToPurchase
         allocation={allocation}
         cadPriceOf={cadPriceOf}
         amount={amount}
       />
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={<div className="mx-auto max-w-5xl p-6">Loading...</div>}
+    >
+      <PortfolioContent />
+    </Suspense>
   );
 }
