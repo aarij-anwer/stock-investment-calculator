@@ -12,16 +12,33 @@ export default function SharesToPurchase({
   allocation,
   cadPriceOf,
   amount,
+  fractional,
+  setFractional,
 }: {
   allocation: Allocation;
   cadPriceOf: (sym: string) => number;
   amount: number;
+  fractional: boolean;
+  setFractional: (val: boolean) => void;
 }) {
   return (
     <section className="mt-8">
-      <h2 className="text-xl font-semibold mb-2 text-neutral-900 dark:text-neutral-100">
-        Shares to Purchase
-      </h2>
+      <div className="flex flex-row justify-between items-center mb-2">
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+          Shares to Purchase
+        </h2>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={fractional}
+            onChange={(e) => setFractional(e.target.checked)}
+            className="w-4 h-4 cursor-pointer"
+          />
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">
+            Fractional Shares
+          </span>
+        </label>
+      </div>
 
       {!allocation ? (
         <p className="text-neutral-600 dark:text-neutral-300">
@@ -42,6 +59,7 @@ export default function SharesToPurchase({
               {Object.entries(allocation.shares as Record<string, number>).map(
                 ([sym, qty], i) => {
                   const cost = qty * cadPriceOf(sym);
+                  const displayQty = fractional ? qty.toFixed(2) : qty;
                   return (
                     <tr
                       key={sym}
@@ -54,7 +72,7 @@ export default function SharesToPurchase({
                       ].join(' ')}
                     >
                       <Td>{sym}</Td>
-                      <Td>{qty}</Td>
+                      <Td>{displayQty}</Td>
                       <Td>${cost.toFixed(2)}</Td>
                     </tr>
                   );

@@ -127,6 +127,7 @@ function PortfolioContent() {
   const [prioritizeIdx, setPrioritizeIdx] =
     useState<number>(getInitialPriority);
   const [saveMessage, setSaveMessage] = useState<string>('');
+  const [fractional, setFractional] = useState<boolean>(false);
 
   const { fetchStatuses } = useQuoteResolver(rows, setRows);
 
@@ -143,7 +144,8 @@ function PortfolioContent() {
     amount,
     usdToCad,
     tickerInputs,
-    effectivePrioritize
+    effectivePrioritize,
+    fractional
   );
 
   const totalWeightPct = useMemo(() => Math.round(totalWeight(rows)), [rows]);
@@ -291,6 +293,8 @@ function PortfolioContent() {
         allocation={allocation}
         cadPriceOf={cadPriceOf}
         amount={amount}
+        fractional={fractional}
+        setFractional={setFractional}
       />
     </main>
   );

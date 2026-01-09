@@ -121,6 +121,45 @@ export function allocateShares(
   return { shares, spent, leftover };
 }
 
+export function allocateSharesFractional(
+  budgetCad: number,
+  inputs: TickerInput[],
+  usdToCad: number,
+  prioritize?: string
+): AllocationResult {
+  const shares: Record<string, number> = {};
+  if (!Array.isArray(inputs) || inputs.length === 0 || budgetCad <= 0) {
+    return { shares, spent: 0, leftover: Math.max(0, budgetCad) };
+  }
+
+  const sumW = inputs.reduce(
+    (s, i) => s + (Number.isFinite(i.weightPct) ? Number(i.weightPct) : 0),
+    0
+  );
+
+  const weights = inputs.map((i) => ({
+    sym: normalizeSymbol(i.symbol),
+    cadPrice: i.currency === 'USD' ? i.price * usdToCad : i.price,
+    weight: sumW > 0 ? i.weightPct / sumW : 1 / inputs.length,
+  }));
+
+  let spent = 0;
+  for (const w of weights) {
+    if (w.cadPrice <= 0) continue;
+    const targetCad = budgetCad * w.weight;
+    const qty = targetCad / w.cadPrice;
+    if (Number.isFinite(qty) && qty > 0) {
+      shares[w.sym] = qty;
+      spent += qty * w.cadPrice;
+    } else {
+      shares[w.sym] = 0;
+    }
+  }
+
+  const leftover = Math.max(0, budgetCad - spent);
+  return { shares, spent, leftover };
+}
+
 /* ---------------------------- React utilities --------------------------- */
 
 export function useDebounced<T>(value: T, delay = 400): T {
@@ -310,12 +349,15 @@ export function useAllocation(
   amountCad: number,
   usdToCad: number,
   tickerInputs: TickerInput[],
-  prioritize?: string
+  prioritize?: string,
+  fractional = false
 ) {
   console.log(tickerInputs);
   return useMemo(() => {
     if (!tickerInputs || tickerInputs.length === 0 || amountCad <= 0)
       return null;
-    return allocateShares(amountCad, tickerInputs, usdToCad, prioritize);
-  }, [amountCad, usdToCad, tickerInputs, prioritize]);
+    return fractional
+      ? allocateSharesFractional(amountCad, tickerInputs, usdToCad, prioritize)
+      : allocateShares(amountCad, tickerInputs, usdToCad, prioritize);
+  }, [amountCad, usdToCad, tickerInputs, prioritize, fractional]);
 }
