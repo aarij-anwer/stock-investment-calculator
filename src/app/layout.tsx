@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Smart Portfolio Allocator',
-  description: 'Created by Aarij Anwer',
+  description: 'Build a smarter monthly portfolio.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
