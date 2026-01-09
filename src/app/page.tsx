@@ -256,10 +256,18 @@ function PortfolioContent() {
       {activePreset === 'Custom' && (
         <div className="mt-3 flex items-center gap-3">
           <button
+            onClick={() =>
+              setRows((prev) => [...prev, { symbol: '', weightPct: 0 }])
+            }
+            className="px-4 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
+          >
+            Add row
+          </button>
+          <button
             onClick={saveCustomPortfolio}
             className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
           >
-            Save Custom Portfolio
+            Save!
           </button>
           {saveMessage && (
             <span className="text-sm text-green-600 dark:text-green-400">

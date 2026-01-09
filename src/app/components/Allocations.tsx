@@ -165,17 +165,6 @@ export default function Allocations({
           </tbody>
         </table>
       </div>
-      {/* Add row */}
-      {!disabled && (
-        <div className="flex gap-3 mt-3">
-          <button
-            onClick={addRow}
-            className="px-4 py-2 rounded-md border border-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
-          >
-            Add row
-          </button>
-        </div>
-      )}
     </>
   );
 }
