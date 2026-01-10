@@ -200,7 +200,9 @@ function PortfolioContent() {
     <main className="mx-auto max-w-5xl p-6 mb-6 lg:mb-10">
       {/* Header Section */}
       <section className="mb-6">
-        <h1 className="text-5xl font-bold mb-2">Smart Portfolio Allocator</h1>
+        <h1 className="text-3xl lg:text-5xl font-bold mb-2">
+          Smart Portfolio Allocator
+        </h1>
         <p className="text-xl mb-2">Build a smarter monthly portfolio.</p>
         <div className="relative mb-3">
           {/* Hidden content to reserve space */}
